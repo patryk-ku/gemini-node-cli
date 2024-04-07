@@ -134,7 +134,10 @@ debugInfo(CONFIG);
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${CONFIG.gemini_api_key}`;
 
 // Proxy
-const proxyAgent = new HttpsProxyAgent(CONFIG.proxy);
+let proxyAgent;
+if (CONFIG.proxy.length > 1) {
+	proxyAgent = new HttpsProxyAgent(CONFIG.proxy);
+}
 
 const chatHistory = [];
 console.log('Welcome to the Google Gemini AI chatbot CLI! Type your prompt below.');
@@ -292,15 +295,26 @@ while (true) {
 	// API call
 	let answer;
 	let isResponseOk = true;
+
+	const requestOptions = {
+		method: 'post',
+		body: JSON.stringify(data),
+	};
+
+	if (CONFIG.proxy.length > 1) {
+		requestOptions.agent = proxyAgent;
+	}
+
 	try {
-		const response = await fetch(API_URL, {
-			method: 'post',
-			body: JSON.stringify(data),
-			agent: proxyAgent,
-		});
+		const response = await fetch(API_URL, requestOptions);
 
 		const json = await response.json();
 		debugInfo(json);
+
+		// When API returned error code
+		if (json.error) {
+			throw new Error(json.error.message);
+		}
 
 		// When the prompt violates safety settings (if enabled)
 		if (
@@ -333,6 +347,37 @@ while (true) {
 		header('Gemini:', cyan);
 		commandOutput(error, true);
 		console.log('');
+
+		// Tip for user about proxy and vpn options
+		if (error.message === 'User location is not supported for the API use.') {
+			marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
+			console.log(
+				marked.parse(`
+# TIP:
+
+Use **proxy** or **VPN**.
+
+Google Gemini API is not available in Europe yet, but you can bypass
+this by using a VPN or proxy from a country outside of Europe
+(preferably the USA).
+
+Instructions:
+
+## VPN:
+
+Simply connect to a VPN server through your VPN provider's app. There
+are several free VPN providers available, such as **Proton VPN**.
+
+## Proxy:
+
+This client has built-in proxy support so using it is very simple. All
+you need to do is find some free proxy (use Google) and then enter its
+IP address into the config.json file.
+
+Check \`readme.md\` and \`config.json\` for more info.
+`)
+			);
+		}
 	}
 
 	// Add answer to history if everything is ok, else delete last user question if error
