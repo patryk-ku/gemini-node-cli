@@ -17,7 +17,7 @@ import util from 'util';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-marked.use(markedTerminal());
+marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
 
 // ANSI escape sequences
 const reset = '\x1b[0m';
@@ -68,7 +68,7 @@ function debugInfo(object) {
 // Display output of executed command
 function commandOutput(text, isError = false) {
 	const startingCharacter = isError ? `${red}✘` : `${green}✔`;
-	console.log(`\n${startingCharacter}${reset} ${text}\n`);
+	console.log(`\n ${startingCharacter}${reset} ${text}\n`);
 }
 
 // Delete last terminal line
@@ -171,13 +171,13 @@ while (true) {
 | /save json | /sj | saves entire conversation to .json file |
 `;
 			console.log('');
+			marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
 			console.log(marked.parse(markdown));
 			continue;
 		}
 		case '/n':
 		case '/new': {
 			chatHistory.length = 0;
-			// commandOutput('Starting new chat.');
 			headerCenter('Starting new chat', yellow);
 			continue;
 		}
@@ -305,7 +305,7 @@ while (true) {
 		// When the prompt violates safety settings (if enabled)
 		if (
 			json?.promptFeedback?.blockReason === 'SAFETY' ||
-			json?.candidates[0]?.finishReason === 'SAFETY'
+			json?.candidates?.[0]?.finishReason === 'SAFETY'
 		) {
 			throw new Error(
 				'Response was blocked by Gemini due to safety reasons. This can be disabled in the config file (check readme.md).'
@@ -313,7 +313,10 @@ while (true) {
 		}
 
 		// When chatbot cenzorship blocked response
-		if (json?.candidates[0]?.finishReason === 'OTHER') {
+		if (
+			json?.candidates?.[0]?.finishReason === 'OTHER' ||
+			json?.promptFeedback?.blockReason === 'OTHER'
+		) {
 			throw new Error(
 				'Despite disabling safety settings, your prompt still got blocked. Unfortunately, these settings do not fully disable all censorship and your request most likely contained something sensitive or illegal which caused the chatbot to block the response.'
 			);
@@ -322,6 +325,7 @@ while (true) {
 		answer = json.candidates[0].content.parts[0].text;
 
 		header('Gemini:', cyan);
+		marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
 		console.log(marked.parse(answer));
 		deleteLastLine();
 	} catch (error) {
