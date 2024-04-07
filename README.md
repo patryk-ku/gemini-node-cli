@@ -1,14 +1,34 @@
 # gemini-node-cli
+
 Simple cross platform chatbot CLI for the Gemini API written in Node.js with **markdown** support and built-in **proxy** for European users where the API is not yet available.
+
+![chat](/assets/chat.gif)
 
 > [!TIP]
 > Friendly reminder that Gemini API access is currently free of charge (with rate limits). The only problem is that it's not yet available in Europe, but this can be bypassed using a proxy or VPN.
 
+It is possible to save the last message, the whole chat or export data to a JSON file:
+
+![demo](/assets/demo.gif)
+
+Markdown support:
+
+![markdown](/assets/markdown.png)
+
+And code syntax highlighting:
+
+![code](/assets/code.png)
+
+Every gif and screenshot in this repo was made using [VHS](https://github.com/charmbracelet/vhs).
+
 ## Requirements
 
 - Node.js and NPM installed and available in PATH.
+- Any modern terminal emulator.
 
 ## Installation
+
+Clone the repo and install the required packages. Then rename the `config.json.example` to `config.json`.
 
 For Unix-like system:
 
