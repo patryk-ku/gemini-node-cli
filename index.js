@@ -157,6 +157,12 @@ if (CONFIG?.proxy?.length > 1) {
 	proxyAgent = new HttpsProxyAgent(CONFIG.proxy);
 }
 
+// Parse optional prompt from command-line argument if any passed
+let argumentPrompt = '';
+if (process.argv.length > 2) {
+	argumentPrompt = process.argv.slice(2).join(' ');
+}
+
 const chatHistory = [];
 console.log(`Welcome to the Google ${cyan}Gemini AI${reset} chatbot CLI! Type your prompt below.`);
 console.log(`${grey}Commands: /help /exit /new /copy /save /save-all /save-json /model${reset}\n`);
@@ -164,7 +170,15 @@ console.log(`${grey}Commands: /help /exit /new /copy /save /save-all /save-json 
 while (true) {
 	// Get user input
 	header('Your prompt:', green);
-	const question = await prompt();
+	let question;
+
+	if (argumentPrompt.length > 0) {
+		question = argumentPrompt;
+		argumentPrompt = '';
+		console.log(`${green}🮥${reset}  ${question}`);
+	} else {
+		question = await prompt();
+	}
 
 	// Commands
 	switch (question.trim()) {
