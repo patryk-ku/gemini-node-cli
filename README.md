@@ -71,6 +71,22 @@ Simply open your terminal, navigate to the directory where you have cloned the f
 
 I recommend creating an alias for this so that you can access the chatbot from anywhere.
 
+### Read prompt from arguments
+
+It is also possible to start the script by typing your first prompt in the arguments.
+
+```sh
+node index.js Your question to AI here
+```
+
+> You can pass each word as a separate argument, but you must be careful not to pass any special terminal characters ( like ' " ? < > &).
+
+A much better idea is to wrap your question in quotation marks (' or "), in which case you can use any characters in it.
+
+```sh
+node index.js 'Your question to AI here?'
+```
+
 ## Available commands
 
 | command | alias | description |
