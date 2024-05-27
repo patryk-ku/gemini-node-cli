@@ -51,7 +51,8 @@ Configuration file includes several options:
 	"proxy": "",
 	"output_path": "",
 	"safety_settings": "false",
-	"debug_mode": "false"
+	"debug_mode": "false",
+	"default_model": "1.5-flash"
 }
 ```
 
@@ -62,12 +63,29 @@ Configuration file includes several options:
 | output_path | Path to the folder where the conversations will be saved. |
 | safety_settings | Gemini safety settings. Set to `false` to disable all safety restrictions, or `true` to enable the default safety restrictions. |
 | debug_mode | For development purposes. Prints raw responses from the API and other informations. |
+| default_model | Select the default model. Available options: `1.0-pro`, `1.5-pro`, `1.5-flash` |
 
 ## Usage
 
 Simply open your terminal, navigate to the directory where you have cloned the files, and run either `npm run start` or `node index.js`.
 
 I recommend creating an alias for this so that you can access the chatbot from anywhere.
+
+### Read prompt from arguments
+
+It is also possible to start the script by typing your first prompt in the arguments.
+
+```sh
+node index.js Your question to AI here
+```
+
+> You can pass each word as a separate argument, but you must be careful not to pass any special terminal characters ( like ' " ? < > &).
+
+A much better idea is to wrap your question in quotation marks (' or "), in which case you can use any characters in it.
+
+```sh
+node index.js 'Your question to AI here?'
+```
 
 ## Available commands
 
@@ -80,3 +98,4 @@ I recommend creating an alias for this so that you can access the chatbot from a
 | /save | /s | saves last presponse to .md file |
 | /save all | /sa | saves entire conversation to .md file |
 | /save json | /sj | saves entire conversation to .json file |
+| /model | /m | Gemini model selection |

@@ -3,5 +3,6 @@
 	"proxy": "",
 	"output_path": "",
 	"safety_settings": "false",
-	"debug_mode": "false"
+	"debug_mode": "false",
+	"default_model": "1.5-flash"
 }

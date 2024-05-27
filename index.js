@@ -31,6 +31,15 @@ const grey = '\x1b[90m';
 // Get user input
 async function prompt(text = `${green}🮥${reset}  `) {
 	const rl = readline.createInterface({ input, output });
+
+	// unsettled top-level await error fix
+	rl.on('SIGINT', () => {
+		rl.close();
+		console.log('\n\nExiting on user request.');
+		process.emit('SIGINT');
+		process.exit();
+	});
+
 	const answer = await rl.question(text);
 	rl.close();
 	return answer;
@@ -129,24 +138,47 @@ async function checkExists(filePath) {
 const CONFIG = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json')));
 debugInfo(CONFIG);
 
-// Gemini api
-// const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${CONFIG.gemini_api_key}`;
-const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${CONFIG.gemini_api_key}`;
+// Model selection
+const models = ['1.0-pro', '1.5-pro', '1.5-flash'];
+let model = models[2];
+
+if (CONFIG?.default_model?.length > 3) {
+	model = CONFIG.default_model;
+}
+
+// Returns api url for selected model
+const API_URL = () => {
+	return `https://generativelanguage.googleapis.com/v1/models/gemini-${model}:generateContent?key=${CONFIG.gemini_api_key}`;
+};
 
 // Proxy
 let proxyAgent;
-if (CONFIG.proxy.length > 1) {
+if (CONFIG?.proxy?.length > 1) {
 	proxyAgent = new HttpsProxyAgent(CONFIG.proxy);
 }
 
+// Parse optional prompt from command-line argument if any passed
+let argumentPrompt = '';
+if (process.argv.length > 2) {
+	argumentPrompt = process.argv.slice(2).join(' ');
+}
+
 const chatHistory = [];
-console.log('Welcome to the Google Gemini AI chatbot CLI! Type your prompt below.');
-console.log('Commands: /help /exit /new /copy /save /save-all /save-json\n');
+console.log(`Welcome to the Google ${cyan}Gemini AI${reset} chatbot CLI! Type your prompt below.`);
+console.log(`${grey}Commands: /help /exit /new /copy /save /save-all /save-json /model${reset}\n`);
 
 while (true) {
 	// Get user input
 	header('Your prompt:', green);
-	const question = await prompt();
+	let question;
+
+	if (argumentPrompt.length > 0) {
+		question = argumentPrompt;
+		argumentPrompt = '';
+		console.log(`${green}🮥${reset}  ${question}`);
+	} else {
+		question = await prompt();
+	}
 
 	// Commands
 	switch (question.trim()) {
@@ -155,6 +187,7 @@ while (true) {
 		}
 		case '/q':
 		case '/exit': {
+			console.log('\nExiting on user request.');
 			process.exit();
 			break;
 		}
@@ -172,6 +205,7 @@ while (true) {
 | /save | /s | saves last presponse to .md file |
 | /save all | /sa | saves entire conversation to .md file |
 | /save json | /sj | saves entire conversation to .json file |
+| /model | /m | Gemini model selection |
 `;
 			console.log('');
 			marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
@@ -251,6 +285,50 @@ while (true) {
 			}
 			continue;
 		}
+		case '/m':
+		case '/model': {
+			const markdown = `
+## Currently selected model:
+
+- \`${model}\`
+
+## Available models:
+
+| id | name  |
+|---|---|
+| 1 | \`1.0-pro\` |
+| 2 | \`1.5-pro\` |
+| 3 | \`1.5-flash\` |
+
+To select a model enter its **id** or **name**.
+`;
+			console.log('');
+			marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
+			console.log(marked.parse(markdown));
+
+			let isModelSelected = false;
+
+			do {
+				const userInput = (await prompt()).trim();
+				if (models.includes(userInput)) {
+					model = userInput;
+					isModelSelected = true;
+					continue;
+				}
+
+				if ([1, 2, 3].includes(Number(userInput))) {
+					model = models[Number(userInput) - 1];
+					isModelSelected = true;
+					continue;
+				}
+
+				commandOutput('Please enter the correct id or model name.', true);
+			} while (!isModelSelected);
+
+			headerCenter(`Switched to Gemini ${model} model`, yellow);
+
+			continue;
+		}
 	}
 
 	// Insert user question to chat history
@@ -301,15 +379,15 @@ while (true) {
 		body: JSON.stringify(data),
 	};
 
-	if (CONFIG.proxy.length > 1) {
+	if (CONFIG?.proxy?.length > 1) {
 		requestOptions.agent = proxyAgent;
 	}
 
 	try {
-		const response = await fetch(API_URL, requestOptions);
+		const response = await fetch(API_URL(), requestOptions);
 
 		const json = await response.json();
-		debugInfo(json);
+		debugInfo({ api: API_URL(), json: json });
 
 		// When API returned error code
 		if (json.error) {
@@ -338,13 +416,13 @@ while (true) {
 
 		answer = json.candidates[0].content.parts[0].text;
 
-		header('Gemini:', cyan);
+		header(`Gemini ${model}:`, cyan);
 		marked.use(markedTerminal({ reflowText: true, width: process.stdout.columns }));
 		console.log(marked.parse(answer));
 		deleteLastLine();
 	} catch (error) {
 		isResponseOk = false;
-		header('Gemini:', cyan);
+		header(`Gemini ${model}:`, cyan);
 		commandOutput(error, true);
 		console.log('');
 
