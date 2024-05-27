@@ -31,6 +31,15 @@ const grey = '\x1b[90m';
 // Get user input
 async function prompt(text = `${green}🮥${reset}  `) {
 	const rl = readline.createInterface({ input, output });
+
+	// unsettled top-level await error fix
+	rl.on('SIGINT', () => {
+		rl.close();
+		console.log('\n\nExiting on user request.');
+		process.emit('SIGINT');
+		process.exit();
+	});
+
 	const answer = await rl.question(text);
 	rl.close();
 	return answer;
@@ -149,9 +158,7 @@ if (CONFIG?.proxy?.length > 1) {
 }
 
 const chatHistory = [];
-console.log(
-	`Welcome to the Google ${cyan}Gemini AI${reset} chatbot CLI! Type your prompt below.`
-);
+console.log(`Welcome to the Google ${cyan}Gemini AI${reset} chatbot CLI! Type your prompt below.`);
 console.log(`${grey}Commands: /help /exit /new /copy /save /save-all /save-json /model${reset}\n`);
 
 while (true) {
@@ -166,6 +173,7 @@ while (true) {
 		}
 		case '/q':
 		case '/exit': {
+			console.log('\nExiting on user request.');
 			process.exit();
 			break;
 		}
