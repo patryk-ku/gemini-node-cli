@@ -1,3 +1,8 @@
+> [!WARNING]
+> This project is no longer maintained and has been archived.
+> Please use the official CLI instead:
+> [@google/gemini-cli](https://github.com/google-gemini/gemini-cli).
+
 # gemini-node-cli
 
 Simple cross platform chatbot CLI for the Gemini API written in Node.js with **markdown** support and built-in **proxy** for European users where the API is not yet available.
